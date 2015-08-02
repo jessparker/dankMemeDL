@@ -2,12 +2,16 @@ __author__ = 'jungletech'
 import praw
 import requests
 import glob
+import re
 from bs4 import BeautifulSoup
 
 MIN_SCORE = 20
 
 r = praw.Reddit(user_agent='dankMemeDL')
 submissions = r.get_subreddit('me_irl').get_hot(limit=5)
+
+imgurUrlPattern = re.compile(r'(http://i.imgur.com/(.*))(\?.*)?')
+
 
 def download_image(imageUrl, localFileName):
     response = requests.get(imageUrl)
@@ -32,7 +36,6 @@ for submission in submissions:
     if 'http://imgur.com/a/' in submission.url:
         albumId = submission.url[len('http://imgur.com/a/'):]
         htmlSource = requests.get(submission.url).text
-
         soup = BeautifulSoup(htmlSource)
         matches = soup.select('.album-view-image-link a')
         for match in matches:
@@ -49,8 +52,17 @@ for submission in submissions:
     elif 'http://imgur.com/' in submission.url:
         htmlSource = requests.get(submission.url).text
         soup = BeautifulSoup(htmlSource)
-        matches = soup.select('')
+        imageUrl = soup.select('.image a')[0]['href']
+        localFileName = 'reddit_me_irl_%s_album_None_imgur_%s' % (submission.id, imageFile)
+        download_image(imageUrl, localFileName)
 
     # download images from direct links
     elif 'http://i.imgur.com/' in submission.url:
-        
+        mo = imgurUrlPattern.search(submission.url)
+        imgurFilename = mo.group(2)
+        if '?' in imgurFilename:
+            # the regex does not catch a '?' at the end of the filename, so we remove it here.
+            imgurFilename = imgurFilename[:imgurFilename.find('?')]
+
+        localFileName = 'reddit_me_irl_%s_album_None_imgur_%s' % (submission.id, imgurFilename)
+        download_image(imageUrl, localFileName)
