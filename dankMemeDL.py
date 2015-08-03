@@ -5,9 +5,9 @@ from bs4 import BeautifulSoup
 MIN_SCORE = 20
 
 r = praw.Reddit(user_agent='dankMemeDL')
-submissions = r.get_subreddit('me_irl').get_hot(limit=25)
+submissions = r.get_subreddit('me_irl').get_hot(limit=5)
 
-imgurUrlPattern = re.compile(r'(http://i.imgur.com/(.*))(\?.*)?')
+imgurUrlPattern = re.compile(r'(i.imgur.com/(.*))(\?.*)?')
 
 
 def download_image(imageUrl, localFileName):
@@ -19,11 +19,12 @@ def download_image(imageUrl, localFileName):
                 fo.write(chunk)
 
 for submission in submissions:
+    print(submission)
     if "imgur.com/" not in submission.url:
         continue # skip non imgur submissions
     if submission.score < MIN_SCORE:
         continue # skip submissions lower than minimum score threshold
-    if len(glob.glob('reddit_me_irl_%s_*' % submission.id)) > 0:
+    if len(glob.glob('images/reddit_me_irl_%s_*' % submission.id)) > 0:
         continue # already downloaded images from this submission
 
     # download images from album pages
@@ -43,14 +44,14 @@ for submission in submissions:
             download_image('http:' + match['href'], localFileName)
 
     # download images from direct links
-    elif 'http://i.imgur.com/' in submission.url:
+    elif 'i.imgur.com/' in submission.url:
         mo = imgurUrlPattern.search(submission.url)
         imgurFilename = mo.group(2)
         if '?' in imgurFilename:
             # the regex does not catch a '?' at the end of the filename, so we remove it here.
             imgurFilename = imgurFilename[:imgurFilename.find('?')]
 
-        localFileName = 'reddit_me_irl_%s_album_None_imgur_%s' % (submission.id, imgurFilename)
+        localFileName = 'images/reddit_me_irl_%s_album_None_imgur_%s' % (submission.id, imgurFilename)
         download_image(submission.url, localFileName)
 
     # download images from single image pages
@@ -69,5 +70,5 @@ for submission in submissions:
         else:
             imageFile = imageUrl[imageUrl.rfind('/') + 1:]
 
-        localFileName = 'reddit_me_irl_%s_album_None_imgur_%s' % (submission.id, imageFile)
+        localFileName = 'images/reddit_me_irl_%s_album_None_imgur_%s' % (submission.id, imageFile)
         download_image(imageUrl, localFileName)
